@@ -1,31 +1,25 @@
 module SessionsHelper
-  
+
+  # when we sign in, all we really want to do is store the user's remember_token as a set of cookies that our server
+  # remembers.  currently i don't know if there's a point to using @variables, since it appears that every
+  # page gets a new session object, requiring us to re-fetch the user using User.find_by_remember_token
   def sign_in(user)
     cookies.permanent[:remember_token] = user.remember_token
-    self.current_user = user
   end
   
-  # exclamation denotes 'not', or, in context to the line of code below, 
-  # not nil.  Not nil returns true
+  # signed_in will just check to see if we can find a user with the remember_token we're looking for.
   def signed_in?
-    !current_user.nil?
+    !self.current_user.nil?
   end
-  
-  # '=' in a method is strange but it defines a method current_user = expressly
-  # designed to handle assignment to the current_user
-  
-  def current_user=(user)
-    @current_user ||= User.find_by_remember_token(cookies[:remember_token])
-  end
-  
-  # '||=' translates to ("or equals")
-  # basically returns @current_user ORRRRR if there is none is returns the latter part
+
+  # let's have self.current_user call User.find_by_remember_token.  if we can't find it, we return nil.
   def current_user
-    @current_user ||= User.find_by_remember_token(cookies[:remember_token])
+    User.find_by_remember_token(cookies[:remember_token])
   end
-  
+
+  # signing out just deletes the rememeber_token from the cookies that our server is aware of.
+  # then, when anything else calls current_user, it will return nil because we've deleted the cookie we'd be looking for.
   def sign_out
-    self.current_user = nil
     cookies.delete(:remember_token)
   end
 end
