@@ -1,24 +1,31 @@
 module SessionsHelper
 
-  # when we sign in, all we really want to do is store the user's remember_token as a set of cookies that our server
-  # remembers.  currently i don't know if there's a point to using @variables, since it appears that every
-  # page gets a new session object, requiring us to re-fetch the user using User.find_by_remember_token
+  # writes a cookie in the response back to the user with the remember_token.  this indicates the user has been auth'ed.
+  #
+  # however, this raises an interesting question - is this enough to prove that the user has been authenticated?
+  # what if someone hijacked another's auth cookie?
+  #
+  # this is something to consider.  how could we mitigate this?
+  #
   def sign_in(user)
-    cookies.permanent[:remember_token] = user.remember_token
+    cookies[:remember_token] = user.remember_token
   end
   
-  # signed_in will just check to see if we can find a user with the remember_token we're looking for.
+  # now, all we need to check is if the user has the 'remember_token' cookie
+  #
+  # however, this doesn't really prove that the user has logged in - you can go into the dev tools in chrome
+  # and fake the cookie and give it a bogus value.  a proper check would be to also see if the remember_token is valid
+  # but do we want to hit our database every time we need to check if the user is signed in?
   def signed_in?
-    !self.current_user.nil?
+    !cookies[:remember_token].nil?
   end
 
-  # let's have self.current_user call User.find_by_remember_token.  if we can't find it, we return nil.
   def current_user
     User.find_by_remember_token(cookies[:remember_token])
   end
 
-  # signing out just deletes the rememeber_token from the cookies that our server is aware of.
-  # then, when anything else calls current_user, it will return nil because we've deleted the cookie we'd be looking for.
+  # since we're using cookies to determine whether or not the user is authorized - all we need to do here is
+  # delete the cookie.
   def sign_out
     cookies.delete(:remember_token)
   end
